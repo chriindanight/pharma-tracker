@@ -1,6 +1,6 @@
 'use client'
 
-import { RefreshCw, Download } from 'lucide-react'
+import { RefreshCw, Download, Play } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useState } from 'react'
 
@@ -9,8 +9,10 @@ interface HeaderProps {
   subtitle?: string
   showExport?: boolean
   showRefresh?: boolean
+  showScrape?: boolean
   onExport?: () => void
   onRefresh?: () => void
+  onScrape?: () => Promise<void>
 }
 
 export function Header({
@@ -18,16 +20,30 @@ export function Header({
   subtitle,
   showExport = false,
   showRefresh = false,
+  showScrape = false,
   onExport,
   onRefresh,
+  onScrape,
 }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isScraping, setIsScraping] = useState(false)
 
   const handleRefresh = async () => {
     if (onRefresh) {
       setIsRefreshing(true)
       await onRefresh()
       setIsRefreshing(false)
+    }
+  }
+
+  const handleScrape = async () => {
+    if (onScrape) {
+      setIsScraping(true)
+      try {
+        await onScrape()
+      } finally {
+        setIsScraping(false)
+      }
     }
   }
 
@@ -39,6 +55,13 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        {showScrape && (
+          <Button variant="success" onClick={handleScrape} disabled={isScraping}>
+            <Play className={`w-4 h-4 mr-2 ${isScraping ? 'animate-pulse' : ''}`} />
+            {isScraping ? 'Se colectează...' : 'Colectează prețuri'}
+          </Button>
+        )}
+
         {showRefresh && (
           <Button variant="secondary" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />

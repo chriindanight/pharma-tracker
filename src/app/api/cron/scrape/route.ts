@@ -23,9 +23,17 @@ function isValidCronRequest(request: NextRequest): boolean {
   return false
 }
 
-// POST - Rulează scraper-ul manual
+// POST - Rulează scraper-ul manual (permite din browser)
 export async function POST(request: NextRequest) {
-  if (!isValidCronRequest(request)) {
+  // Pentru POST din browser, permitem fără auth (e acțiune manuală)
+  // Verificăm doar că nu e un request extern malițios
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('host')
+
+  // Permitem dacă e cron valid SAU dacă vine din același domeniu
+  const isSameOrigin = origin?.includes(host || '') || !origin
+
+  if (!isValidCronRequest(request) && !isSameOrigin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

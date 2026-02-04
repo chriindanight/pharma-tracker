@@ -99,6 +99,23 @@ export default function DashboardPage() {
     await fetchData()
   }
 
+  const handleScrape = async () => {
+    try {
+      const response = await fetch('/api/cron/scrape', { method: 'POST' })
+      const result = await response.json()
+
+      if (result.success) {
+        alert(`Colectare completă!\n${result.successCount || 0} prețuri colectate, ${result.errorCount || 0} erori`)
+        // Reîncărcăm datele
+        await fetchData()
+      } else {
+        alert(`Eroare: ${result.error || 'Necunoscută'}`)
+      }
+    } catch (error) {
+      alert(`Eroare la colectare: ${(error as Error).message}`)
+    }
+  }
+
   // Transformăm datele pentru tabel
   const tableData = priceData.reduce(
     (acc, item) => {
@@ -166,8 +183,10 @@ export default function DashboardPage() {
         subtitle="Monitorizare prețuri farmacii"
         showExport
         showRefresh
+        showScrape
         onExport={handleExport}
         onRefresh={handleRefresh}
+        onScrape={handleScrape}
       />
 
       <StatsCards
