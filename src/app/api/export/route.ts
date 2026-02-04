@@ -96,8 +96,22 @@ export async function GET(request: NextRequest) {
   // Creăm Excel
   const workbook = XLSX.utils.book_new()
 
+  // Formatăm perioada pentru numele fișierului și header
+  const periodStart = startDate ? new Date(startDate).toLocaleDateString('ro-RO') : 'Început'
+  const periodEnd = endDate ? new Date(endDate).toLocaleDateString('ro-RO') : 'Prezent'
+  const periodText = `Perioada: ${periodStart} - ${periodEnd}`
+
   // Sheet 1: Prețuri
   const pricesData: Record<string, string | number | null>[] = []
+
+  // Adăugăm un header cu perioada
+  const headerRow: Record<string, string | number | null> = {
+    EAN: periodText,
+    Produs: `Export: ${new Date().toLocaleDateString('ro-RO')}`,
+  }
+  pricesData.push(headerRow)
+  pricesData.push({}) // Rând gol
+
   aggregated.forEach((product) => {
     const row: Record<string, string | number | null> = {
       EAN: product.ean,
@@ -149,8 +163,10 @@ export async function GET(request: NextRequest) {
   // Generăm buffer-ul Excel
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
 
-  // Returnăm fișierul
-  const fileName = `pharmacy-prices-${new Date().toISOString().split('T')[0]}.xlsx`
+  // Returnăm fișierul cu perioada în nume
+  const dateStr = new Date().toISOString().split('T')[0]
+  const periodStr = startDate && endDate ? `_${startDate.split('T')[0]}_to_${endDate.split('T')[0]}` : ''
+  const fileName = `pharmacy-prices-${dateStr}${periodStr}.xlsx`
 
   return new NextResponse(buffer, {
     headers: {

@@ -64,20 +64,20 @@ export function PriceTable({ data, retailers, isLoading }: PriceTableProps) {
   })
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto border border-gray-700 rounded-lg">
+      <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="border-b border-gray-700">
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-900 z-10">
+          <tr className="border-b border-gray-700 bg-gray-800">
+            <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-800 z-20 min-w-[120px] border-r border-gray-700">
               EAN
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-[100px] bg-gray-900 z-10">
+            <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-[120px] bg-gray-800 z-20 min-w-[180px] border-r border-gray-700">
               Produs
             </th>
             {retailers.map((retailer) => (
               <th
                 key={retailer.id}
-                className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[140px]"
+                className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]"
               >
                 {retailer.name}
               </th>
@@ -86,11 +86,11 @@ export function PriceTable({ data, retailers, isLoading }: PriceTableProps) {
         </thead>
         <tbody className="divide-y divide-gray-800">
           {dataWithMinMax.map((product) => (
-            <tr key={product.productId} className="hover:bg-gray-800/30">
-              <td className="px-4 py-3 text-gray-500 text-xs font-mono sticky left-0 bg-gray-900 z-10">
+            <tr key={product.productId} className="hover:bg-gray-800/50">
+              <td className="px-3 py-3 text-gray-500 text-xs font-mono sticky left-0 bg-gray-900 z-10 border-r border-gray-700">
                 {product.ean || '-'}
               </td>
-              <td className="px-4 py-3 text-gray-200 font-medium sticky left-[100px] bg-gray-900 z-10 max-w-[200px] truncate">
+              <td className="px-3 py-3 text-gray-200 font-medium sticky left-[120px] bg-gray-900 z-10 max-w-[180px] truncate border-r border-gray-700" title={product.productName}>
                 {product.productName}
               </td>
               {retailers.map((retailer) => {
@@ -106,22 +106,29 @@ export function PriceTable({ data, retailers, isLoading }: PriceTableProps) {
 
                 if (!priceData.isInStock) {
                   return (
-                    <td key={retailer.id} className="px-4 py-3 text-center">
-                      <span className="text-gray-500 text-xs">Stoc epuizat</span>
+                    <td key={retailer.id} className="px-3 py-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant="error">OOS</Badge>
+                        {priceData.price !== null && (
+                          <span className="text-gray-500 text-xs line-through">
+                            {priceData.price.toFixed(2)} Lei
+                          </span>
+                        )}
+                      </div>
                     </td>
                   )
                 }
 
                 if (priceData.price === null) {
                   return (
-                    <td key={retailer.id} className="px-4 py-3 text-center text-gray-600">
+                    <td key={retailer.id} className="px-3 py-3 text-center text-gray-600">
                       <span className="text-xs">N/A</span>
                     </td>
                   )
                 }
 
                 return (
-                  <td key={retailer.id} className="px-4 py-3 text-center">
+                  <td key={retailer.id} className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <span
                         className={`font-semibold ${
