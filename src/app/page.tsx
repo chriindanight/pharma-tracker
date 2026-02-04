@@ -1,65 +1,165 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState, useCallback } from 'react'
+import { Header } from '@/components/layout/Header'
+import { StatsCards } from '@/components/dashboard/StatsCards'
+import { PriceTable } from '@/components/dashboard/PriceTable'
+import { DateRangePicker } from '@/components/ui/DateRangePicker'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { startOfDay, endOfDay } from 'date-fns'
+
+interface Retailer {
+  id: string
+  name: string
+}
+
+interface PriceData {
+  productId: string
+  ean: string | null
+  productName: string
+  retailerId: string
+  retailerName: string
+  price: number | null
+  originalPrice: number | null
+  promoPercentage: number | null
+  isInStock: boolean
+}
+
+export default function DashboardPage() {
+  const [retailers, setRetailers] = useState<Retailer[]>([])
+  const [priceData, setPriceData] = useState<PriceData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [dateRange, setDateRange] = useState({
+    start: startOfDay(new Date()),
+    end: endOfDay(new Date()),
+  })
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true)
+
+    try {
+      // Fetch retailers
+      const retailersRes = await fetch('/api/retailers')
+      const retailersData = await retailersRes.json()
+      setRetailers(retailersData.filter((r: Retailer & { is_active: boolean }) => r.is_active))
+
+      // Fetch prices
+      const pricesRes = await fetch(
+        `/api/prices?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`
+      )
+      const pricesData = await pricesRes.json()
+      setPriceData(Array.isArray(pricesData) ? pricesData : [])
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const handleDateRangeChange = (start: Date, end: Date) => {
+    setDateRange({ start, end })
+  }
+
+  const handleExport = async () => {
+    const url = `/api/export?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`
+    window.open(url, '_blank')
+  }
+
+  const handleRefresh = async () => {
+    await fetchData()
+  }
+
+  // Transformăm datele pentru tabel
+  const tableData = priceData.reduce(
+    (acc, item) => {
+      let product = acc.find((p) => p.productId === item.productId)
+
+      if (!product) {
+        product = {
+          productId: item.productId,
+          ean: item.ean,
+          productName: item.productName,
+          prices: [],
+        }
+        acc.push(product)
+      }
+
+      product.prices.push({
+        retailerId: item.retailerId,
+        retailerName: item.retailerName,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        promoPercentage: item.promoPercentage,
+        isInStock: item.isInStock,
+      })
+
+      return acc
+    },
+    [] as {
+      productId: string
+      ean: string | null
+      productName: string
+      prices: {
+        retailerId: string
+        retailerName: string
+        price: number | null
+        originalPrice: number | null
+        promoPercentage: number | null
+        isInStock: boolean
+      }[]
+    }[]
+  )
+
+  // Calculăm statistici
+  const uniqueProducts = new Set(priceData.map((p) => p.productId)).size
+  const outOfStockCount = priceData.filter((p) => !p.isInStock).length
+
+  // Găsim câte prețuri sunt cele mai mici
+  let lowestPricesCount = 0
+  tableData.forEach((product) => {
+    const validPrices = product.prices
+      .filter((p) => p.price !== null && p.isInStock)
+      .map((p) => p.price as number)
+
+    if (validPrices.length > 1) {
+      const minPrice = Math.min(...validPrices)
+      lowestPricesCount += product.prices.filter(
+        (p) => p.price === minPrice && p.isInStock
+      ).length
+    }
+  })
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div>
+      <Header
+        title="Dashboard"
+        subtitle="Monitorizare prețuri farmacii"
+        showExport
+        showRefresh
+        onExport={handleExport}
+        onRefresh={handleRefresh}
+      />
+
+      <StatsCards
+        totalProducts={uniqueProducts}
+        totalRetailers={retailers.length}
+        lowestPricesCount={lowestPricesCount}
+        outOfStockCount={outOfStockCount}
+      />
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Comparație Prețuri</CardTitle>
+          <DateRangePicker onRangeChange={handleDateRangeChange} />
+        </CardHeader>
+        <CardContent>
+          <PriceTable data={tableData} retailers={retailers} isLoading={isLoading} />
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
