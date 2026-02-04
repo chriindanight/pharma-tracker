@@ -88,12 +88,71 @@ export function calculatePromoPercentage(
 }
 
 /**
+ * Verifică dacă URL-ul necesită proxy (site-uri care blochează request-uri automatizate)
+ */
+export function needsProxy(url: string): boolean {
+  const proxyDomains = [
+    'drmax.ro',
+  ]
+
+  try {
+    const urlObj = new URL(url)
+    const domain = urlObj.hostname.replace(/^www\./, '')
+    return proxyDomains.some(d => domain.includes(d))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Fetch cu ScraperAPI proxy
+ * Necesită SCRAPER_API_KEY în environment variables
+ */
+export async function fetchWithProxy(
+  url: string,
+  timeoutMs: number = 60000
+): Promise<string> {
+  const apiKey = process.env.SCRAPER_API_KEY
+
+  if (!apiKey) {
+    throw new Error('SCRAPER_API_KEY nu este setat. Pentru Dr Max, ai nevoie de un cont ScraperAPI gratuit.')
+  }
+
+  const proxyUrl = `http://api.scraperapi.com?api_key=${apiKey}&url=${encodeURIComponent(url)}&country_code=ro`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(proxyUrl, {
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Proxy HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    return await response.text()
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
  * Fetch cu headers și timeout
  */
 export async function fetchWithHeaders(
   url: string,
   timeoutMs: number = 30000
 ): Promise<string> {
+  // Verificăm dacă site-ul necesită proxy
+  if (needsProxy(url)) {
+    return fetchWithProxy(url, timeoutMs)
+  }
+
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 

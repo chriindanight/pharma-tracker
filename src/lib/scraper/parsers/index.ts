@@ -2,14 +2,23 @@ import { RetailerParser } from './types'
 import { farmaciaTeiParser } from './farmacia-tei'
 import { helpnetParser } from './helpnet'
 import { catenaParser } from './catena'
+import { remediumFarmParser } from './remedium-farm'
+import { drmaxParser } from './drmax'
+import { springFarmaParser } from './spring-farma'
+import { biscuitPharmaParser } from './biscuit-pharma'
 import { genericParser } from './generic'
 
 // Registru de parsere pentru fiecare retailer
 // Cheia este domeniul (fără www)
 const parserRegistry: Record<string, RetailerParser> = {
   'farmaciatei.ro': farmaciaTeiParser,
+  'comenzi.farmaciatei.ro': farmaciaTeiParser,
   'helpnet.ro': helpnetParser,
   'catena.ro': catenaParser,
+  'remediumfarm.ro': remediumFarmParser,
+  'drmax.ro': drmaxParser,
+  'springfarma.com': springFarmaParser,
+  'biscuitpharma.ro': biscuitPharmaParser,
 }
 
 /**
@@ -41,5 +50,14 @@ export function getAllParsers(): Record<string, RetailerParser> {
   return { ...parserRegistry }
 }
 
-export { farmaciaTeiParser, helpnetParser, catenaParser, genericParser }
+export {
+  farmaciaTeiParser,
+  helpnetParser,
+  catenaParser,
+  remediumFarmParser,
+  drmaxParser,
+  springFarmaParser,
+  biscuitPharmaParser,
+  genericParser
+}
 export type { RetailerParser, ParseResult } from './types'
